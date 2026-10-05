@@ -1,0 +1,1126 @@
+{
+  "name": "Arabic Store Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "mode": "webhook",
+        "options": {
+          "responseMode": "responseNode"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -464,
+        80
+      ],
+      "id": "f99f08e9-10b7-4af8-8d6d-da2b2d2b67d4",
+      "name": "When chat message received"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "PASTE YOUR SYSTEM MESSAGE HERE. See prompts/system-message.example.md for the structure.",
+          "returnIntermediateSteps": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -96,
+        -48
+      ],
+      "id": "842d13d3-5804-4844-8b56-0167b1a0752c",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -240,
+        192
+      ],
+      "id": "ad7e8cf5-e30f-4bf6-8e61-d18921e2fc49",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-3-large",
+        "options": {
+          "dimensions": 1536
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        464,
+        272
+      ],
+      "id": "11d58a70-8768-4d58-9462-964d42ed86b2",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "qdrantCollection": {
+          "__rl": true,
+          "mode": "id",
+          "value": "store_products"
+        },
+        "embeddingBatchSize": 100,
+        "options": {}
+      },
+      "id": "f5583e04-58a6-496f-8ab5-9581a131b29f",
+      "name": "Load Data to Vector Store",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        -32,
+        320
+      ],
+      "credentials": {
+        "qdrantApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Qdrant account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "e28a50eb-fa76-42f6-85bd-1da70b3cc706",
+      "name": "تحديث البيانات يدويًا",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -608,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json[\"الاسم\"] + \" - \" + $json[\"الوصف\"] + \" - الدرجة: \" + ($json[\"الدرجة\"] || \"\") + \" - الاستخدام: \" + ($json[\"الاستخدام\"] || \"\") + \" - طابع الرائحة: \" + ($json[\"طابع الرائحة\"] || \"\") + \" - الأحجام: \" + ($json[\"خيارات الأحجام\"] || \"\") + \" - الميزانية: \" + ($json[\"فئة الميزانية\"] || \"\") + \" - \" + $json[\"الرابط\"] }}",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "zid_product_id",
+                "value": "={{ $json[\"Zid Product ID\"] }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        336,
+        464
+      ],
+      "id": "c9ca63db-9071-48f9-8b54-317d17c9571c",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Your sheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1174707562,
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -208,
+        320
+      ],
+      "id": "a6692858-e538-40f1-8c89-20c0dc4b12b3",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "استخدم هذه الأداة للبحث في بيانات المنتجات المخزنة في الشيت.\n\nإذا سأل المستخدم عن عود أو عطر:\nاستخدم الأداة مباشرة.\n\nأرسل الطلب بهذا الشكل:\nquery = نص المستخدم\n\nولا ترسل نص عادي.\n\nمرّر استعلام البحث بأقرب صياغة ممكنة لكلام العميل نفسه (اسم المنتج أو جزء منه)، لا تعيد صياغته لسؤال عام أو مفهوم. مثال: لو العميل قال 'عود مروكي ميني فاخر متوفر؟'، استعلم بـ 'عود مروكي ميني فاخر' بالضبط، لا تحوّلها لسؤال عن الفرق بين البخور والدهن.",
+        "qdrantCollection": {
+          "__rl": true,
+          "mode": "id",
+          "value": "store_products"
+        },
+        "topK": 3,
+        "options": {}
+      },
+      "id": "5e87e956-c74f-4999-86b1-3cf0ebf1b414",
+      "name": "Qdrant Vector Store",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        144,
+        112
+      ],
+      "credentials": {
+        "qdrantApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Qdrant account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "http://qdrant:6333/collections/store_products",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "b3956809-674b-4199-8cbb-c028fa8ae0ae",
+      "name": "Delete Qdrant Collection",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -384,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 25
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        -16,
+        160
+      ],
+      "id": "debe4d7c-c8e2-47be-bd3a-9e19006a38f9",
+      "name": "Postgres Chat Memory",
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "98eb368e-adbd-4664-9787-abd57927593c",
+      "name": "تحديث معرفة العود",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -768,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "http://qdrant:6333/collections/store_knowledge",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "7cbc6552-7a95-4e10-8639-0d14a419d62a",
+      "name": "Delete Qdrant Knowledge Collection",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -544,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "fileSelector": "/files/ملف_معرفة_العود_والبخور.md",
+        "options": {}
+      },
+      "id": "b4f6286e-474b-4618-b297-963811e54a3d",
+      "name": "Read Knowledge File",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        -352,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "qdrantCollection": {
+          "__rl": true,
+          "mode": "id",
+          "value": "store_knowledge"
+        },
+        "embeddingBatchSize": 100,
+        "options": {}
+      },
+      "id": "24a59773-0adc-41bf-85fc-976c85043318",
+      "name": "Load Knowledge to Qdrant",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        -32,
+        528
+      ],
+      "credentials": {
+        "qdrantApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Qdrant account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "loader": "textLoader",
+        "options": {}
+      },
+      "id": "525f4dbe-e827-4e45-85e2-7c1f5ccf3d39",
+      "name": "Knowledge Data Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        336,
+        752
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "استخدم هذه الأداة للأسئلة العامة عن العود والبخور: كيف يتكوّن العود، مصادره ومناطق منشأه، الفرق بين البخور ودهن العود، أسماء الغابات (مثل اصقون، كليمنتان، جابورا)، والمصطلحات (مستزرع، بري، محسّن، صناعي، أندر ووتر). لا تستخدمها للأسعار أو روابط المنتجات أو التوفر — لهذي استخدم أداة المنتجات. لا تستخدم هذي الأداة لو السؤال يذكر اسم منتج محدد من الكتالوج (حتى لو احتوى كلمة 'عود')، حتى لو صيغة السؤال تبدو عامة.",
+        "qdrantCollection": {
+          "__rl": true,
+          "mode": "id",
+          "value": "store_knowledge"
+        },
+        "topK": 3,
+        "options": {}
+      },
+      "id": "6ee14500-583e-4641-82ac-6f87d078d750",
+      "name": "Qdrant Knowledge Store",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        32,
+        768
+      ],
+      "credentials": {
+        "qdrantApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Qdrant account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Your sheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "أسئلة_جديدة"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "السؤال": "={{ $fromAI('question', 'السؤال بالضبط كما كتبه العميل', 'string') }}",
+            "التاريخ": "={{ $now.format('yyyy-MM-dd HH:mm') }}",
+            "الحالة": "جديد"
+          },
+          "schema": [
+            {
+              "id": "السؤال",
+              "displayName": "السؤال",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "التاريخ",
+              "displayName": "التاريخ",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "الحالة",
+              "displayName": "الحالة",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "id": "c5533573-b5e1-4709-9af2-a4d3e873a599",
+      "name": "Log Unknown Question",
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        704,
+        912
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "استخدم هذه الأداة مباشرة بعد استخدام أداة Log Unknown Question في نفس الرد، لتنبيه الفريق بالإيميل عن نفس السؤال الجديد اللي سجّلته بالشيت.",
+        "sendTo": "you@example.com",
+        "subject": "🔔 سؤال جديد من عميل - المساعد",
+        "emailType": "text",
+        "message": "={{ \"سؤال جديد ما عرف الوكيل جوابه بثقة:\\n\\n\" + $fromAI('question', 'نص سؤال العميل بالضبط كما كتبه', 'string') + \"\\n\\nراجعه بشيت 'أسئلة_جديدة' وأضف الجواب.\" }}",
+        "options": {}
+      },
+      "id": "527f5d05-82be-4d54-9c9e-d06e9065fa01",
+      "name": "Notify Team",
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.2,
+      "position": [
+        912,
+        912
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "endpointUrl": "https://YOUR_STORE_MCP_ENDPOINT",
+        "serverTransport": "sse",
+        "include": "selected",
+        "includeTools": [
+          "Orders",
+          "StoreLocations",
+          "ReferenceData",
+          "ProductReviews",
+          "ProductQA",
+          "BundleOffers",
+          "Coupons",
+          "Loyalty"
+        ],
+        "options": {}
+      },
+      "id": "0a9e6bb5-16de-4b3a-9e39-58e883a73818",
+      "name": "Zid Store Info (MCP)",
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1.2,
+      "position": [
+        1104,
+        912
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"output\": $json.output } }}",
+        "options": {}
+      },
+      "id": "respond-to-customer-001",
+      "name": "Respond to Customer",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1120,
+        -48
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "session_id",
+              "value": "={{ $('When chat message received').item.json.sessionId }}",
+              "type": "string"
+            },
+            {
+              "id": "a2",
+              "name": "السؤال",
+              "value": "={{ $('When chat message received').item.json.chatInput }}",
+              "type": "string"
+            },
+            {
+              "id": "a3",
+              "name": "الجواب",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            },
+            {
+              "id": "a4",
+              "name": "الأداة المستخدمة",
+              "value": "={{ ($json.intermediateSteps || []).map(s => s.action.tool).join('، ') }}",
+              "type": "string"
+            },
+            {
+              "id": "a5",
+              "name": "التاريخ والوقت",
+              "value": "={{ $now.format('yyyy-MM-dd HH:mm:ss') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "prepare-log-data-001",
+      "name": "Prepare Log Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1120,
+        160
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "filter-test-sessions",
+              "leftValue": "={{ !/^\\s*(test-|memtest-)/i.test($json.session_id || '') }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "filter-test-sessions-001",
+      "name": "Filter Test Sessions",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        1360,
+        160
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Your sheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "سجل_المحادثات"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "session_id": "={{ $json.session_id }}",
+            "السؤال": "={{ $json[\"السؤال\"] }}",
+            "الجواب": "={{ $json[\"الجواب\"] }}",
+            "الأداة المستخدمة": "={{ $json[\"الأداة المستخدمة\"] }}",
+            "التاريخ والوقت": "={{ $json[\"التاريخ والوقت\"] }}"
+          },
+          "schema": [
+            {
+              "id": "session_id",
+              "displayName": "session_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "السؤال",
+              "displayName": "السؤال",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "الجواب",
+              "displayName": "الجواب",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "الأداة المستخدمة",
+              "displayName": "الأداة المستخدمة",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "التاريخ والوقت",
+              "displayName": "التاريخ والوقت",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "matchingColumns": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "id": "append-conversation-log-001",
+      "name": "Append Conversation Log",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1600,
+        160
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "id": "955f9694-5853-442b-9bed-cc40de6e7a8a",
+      "name": "كل يوم ٩ الصباح",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        576,
+        736
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://your-n8n.example.com/webhook/YOUR_WEBHOOK_ID/chat",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ action: \"sendMessage\", sessionId: \"test-canary\", chatInput: \"اختبار تشغيل\" }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          },
+          "timeout": 45000
+        }
+      },
+      "id": "934ef084-f658-4833-95f4-4513c83039b4",
+      "name": "اضرب الشات",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        816,
+        736
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "healthy-check",
+              "leftValue": "={{ $json.statusCode === 200 && !!$json.body && typeof $json.body.output === \"string\" && $json.body.output.trim().length > 0 }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "078292b2-e645-4924-84f9-fa77e41fd024",
+      "name": "الرد سليم؟",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1056,
+        736
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "006a0be7-ff9a-4ea7-a889-e68d69e714d0",
+      "name": "سليم — لا شي",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1296,
+        624
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "you@example.com",
+        "subject": "🔴 المساعد ما يرد",
+        "emailType": "text",
+        "message": "={{ [\"🔴 المساعد ما يرد\", \"\", \"كود HTTP: \" + ($json.statusCode !== undefined ? $json.statusCode : \"—\"), \"الرد: \" + (!$json.body ? \"فاضي تماماً\" : (typeof $json.body === \"object\" ? JSON.stringify($json.body).slice(0,400) : String($json.body).slice(0,400))), \"\", \"الوقت: \" + $now.setZone(\"Asia/Riyadh\").toFormat(\"yyyy-MM-dd HH:mm\"), \"\", \"افحص تنفيذات workflow الوكيل في n8n.\"].join(String.fromCharCode(10)) }}",
+        "options": {}
+      },
+      "id": "31f544cd-a5d3-4713-b09b-ed4c1be9d494",
+      "name": "إيميل: الشات واقف",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1296,
+        864
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "3795679f-cdba-4983-a2b2-d29e80895297",
+      "name": "عند فشل أي تنفيذ",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        576,
+        576
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "you@example.com",
+        "subject": "={{ \"🔴 عطل في \" + ($json.workflow ? $json.workflow.name : \"n8n\") }}",
+        "emailType": "text",
+        "message": "={{ [\"🔴 فشل تنفيذ في n8n\", \"\", \"الـworkflow: \" + ($json.workflow ? $json.workflow.name : \"—\"), \"العقدة اللي طاحت: \" + ($json.execution && $json.execution.lastNodeExecuted ? $json.execution.lastNodeExecuted : \"—\"), \"\", \"الخطأ:\", ($json.execution && $json.execution.error ? $json.execution.error.message : ($json.trigger && $json.trigger.error ? $json.trigger.error.message : \"—\")), \"\", \"رقم التنفيذ: \" + ($json.execution ? $json.execution.id : \"—\"), \"الرابط: \" + ($json.execution && $json.execution.url ? $json.execution.url : \"—\")].join(String.fromCharCode(10)) }}",
+        "options": {}
+      },
+      "id": "074c37f7-77f1-4208-a8aa-0d3eaf79d8f8",
+      "name": "إيميل تنبيه",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        816,
+        576
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "Load Data to Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "Load Knowledge to Qdrant",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "Qdrant Knowledge Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "تحديث البيانات يدويًا": {
+      "main": [
+        [
+          {
+            "node": "Delete Qdrant Collection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Load Data to Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Load Data to Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Customer",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Prepare Log Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Qdrant Collection": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "تحديث معرفة العود": {
+      "main": [
+        [
+          {
+            "node": "Delete Qdrant Knowledge Collection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Qdrant Knowledge Collection": {
+      "main": [
+        [
+          {
+            "node": "Read Knowledge File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Knowledge File": {
+      "main": [
+        [
+          {
+            "node": "Load Knowledge to Qdrant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Knowledge Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Load Knowledge to Qdrant",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qdrant Knowledge Store": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Unknown Question": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Team": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Zid Store Info (MCP)": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qdrant Vector Store": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Log Data": {
+      "main": [
+        [
+          {
+            "node": "Filter Test Sessions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Test Sessions": {
+      "main": [
+        [
+          {
+            "node": "Append Conversation Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "اضرب الشات": {
+      "main": [
+        [
+          {
+            "node": "الرد سليم؟",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "الرد سليم؟": {
+      "main": [
+        [
+          {
+            "node": "سليم — لا شي",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "إيميل: الشات واقف",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "كل يوم ٩ الصباح": {
+      "main": [
+        [
+          {
+            "node": "اضرب الشات",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "عند فشل أي تنفيذ": {
+      "main": [
+        [
+          {
+            "node": "إيميل تنبيه",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  }
+}

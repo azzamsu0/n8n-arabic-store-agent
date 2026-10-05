@@ -1,0 +1,230 @@
+{
+  "name": "Catalog Daily Refresh",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "daysInterval": 1,
+              "triggerAtHour": 4,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "id": "cat-sched-001",
+      "name": "كل يوم ٤ فجراً",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Your sheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1174707562,
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID"
+        },
+        "options": {}
+      },
+      "id": "cat-sheet-001",
+      "name": "اقرأ شيت المنتجات",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        220,
+        0
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst MIN = 250;\nif (items.length < MIN) {\n  throw new Error(\"الشيت رجّع \" + items.length + \" صفاً فقط (الحد الأدنى \" + MIN + \"). أُلغي التحديث، والكتالوج القديم باقٍ كما هو.\");\n}\nawait this.helpers.httpRequest({ method: \"DELETE\", url: \"http://qdrant:6333/collections/store_products\" });\nreturn items;"
+      },
+      "id": "cat-code-001",
+      "name": "تحقق ثم امسح المجموعة",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "qdrantCollection": {
+          "__rl": true,
+          "mode": "id",
+          "value": "store_products"
+        },
+        "embeddingBatchSize": 100,
+        "options": {}
+      },
+      "id": "cat-ins-001",
+      "name": "ابنِ الكتالوج في Qdrant",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        660,
+        0
+      ],
+      "credentials": {
+        "qdrantApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Qdrant account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json[\"الاسم\"] + \" - \" + $json[\"الوصف\"] + \" - الدرجة: \" + ($json[\"الدرجة\"] || \"\") + \" - الاستخدام: \" + ($json[\"الاستخدام\"] || \"\") + \" - طابع الرائحة: \" + ($json[\"طابع الرائحة\"] || \"\") + \" - الأحجام: \" + ($json[\"خيارات الأحجام\"] || \"\") + \" - الميزانية: \" + ($json[\"فئة الميزانية\"] || \"\") + \" - \" + $json[\"الرابط\"] }}",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "zid_product_id",
+                "value": "={{ $json[\"Zid Product ID\"] }}"
+              }
+            ]
+          }
+        }
+      },
+      "id": "cat-load-001",
+      "name": "محوّل الصفوف",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-3-large",
+        "options": {
+          "dimensions": 1536
+        }
+      },
+      "id": "cat-emb-001",
+      "name": "Embeddings OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        860,
+        200
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const res = await this.helpers.httpRequest({ method: \"GET\", url: \"http://qdrant:6333/collections/store_products\", json: true });\nconst n = (res && res.result && res.result.points_count) || 0;\nconst MIN = 250;\nif (n < MIN) {\n  throw new Error(\"فشل بناء الكتالوج: Qdrant فيها \" + n + \" نقطة فقط بعد التحديث (الحد الأدنى \" + MIN + \").\");\n}\nreturn [{ json: { points: n, finishedAt: new Date().toISOString() } }];"
+      },
+      "id": "cat-code-002",
+      "name": "تحقق من النتيجة",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "كل يوم ٤ فجراً": {
+      "main": [
+        [
+          {
+            "node": "اقرأ شيت المنتجات",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "اقرأ شيت المنتجات": {
+      "main": [
+        [
+          {
+            "node": "تحقق ثم امسح المجموعة",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "تحقق ثم امسح المجموعة": {
+      "main": [
+        [
+          {
+            "node": "ابنِ الكتالوج في Qdrant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ابنِ الكتالوج في Qdrant": {
+      "main": [
+        [
+          {
+            "node": "تحقق من النتيجة",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "محوّل الصفوف": {
+      "ai_document": [
+        [
+          {
+            "node": "ابنِ الكتالوج في Qdrant",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "ابنِ الكتالوج في Qdrant",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Riyadh"
+  }
+}
