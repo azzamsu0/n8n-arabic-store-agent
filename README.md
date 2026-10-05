@@ -4,6 +4,8 @@ An Arabic AI sales assistant for an online store, built as n8n workflows.
 
 It answers customers in the store's web chat around the clock, recommends products from a live catalogue, explains the product domain from a curated knowledge base, and admits when it does not know instead of guessing.
 
+![The agent workflow in n8n](docs/workflow.png)
+
 ## Background
 
 I built this for a Saudi oud and fragrance retailer where one person handled marketing, and customer questions in the store chat were eating the working day. The same questions came back daily, and the right answers needed real product expertise, not a generic bot reply.
